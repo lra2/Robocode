@@ -6,6 +6,12 @@ import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
 import robocode.*;
 import java.io.IOException;
+import java.util.Vector;
+
+import org.drools.KnowledgeBase;
+import org.drools.builder.KnowledgeBuilder;
+import org.drools.runtime.StatefulKnowledgeSession;
+import org.drools.runtime.rule.FactHandle;
 
 
 /**
@@ -16,6 +22,14 @@ import java.io.IOException;
 
 public class DonCorleone extends TeamRobot {
 
+	public static String RULES_FILE = "RobotFather/rules/DonCorleoneRules.drl";
+	public static String CONSULT_ACTIONS = "consult_actions";
+	
+	private KnowledgeBuilder kbuilder;
+	private KnowledgeBase kbase;
+    private StatefulKnowledgeSession ksession;
+    private Vector<FactHandle> referenciasHechosActuales = new Vector<FactHandle>();
+	
 	double previousEnergy = 100;
  	int movementDirection = 1;
   	int gunDirection = 1;
