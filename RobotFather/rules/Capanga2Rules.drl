@@ -1,0 +1,53 @@
+// Regras de Produção - Capanga II
+
+declare:
+	moveAmount: double
+end
+
+declare:
+	leaderIsDead: boolean
+end
+
+declare:
+	First: boolean
+end
+
+declare:
+	previousEnergy: double
+end
+
+declare:
+	movementDirection: int
+end
+
+rule "message received -> shoot"
+when
+	(exists onMessageReceived(MessageEvent e))
+	(e.getMessage() instanceof Info)
+then
+	turnGunRight(getBearing(i.getX(), i.getY()))
+	fire(FirePower(getDistance(i.getX(), i.getY())))
+end
+
+rule "leader died -> shoot"
+when
+	(exists onRobotDeath(RobotDeathEvent e))
+then
+	$leaderIsDead : true
+end
+
+rule "collide robot -> turn"
+when
+	(exists onHitRobot(HitRobotEvent e))
+	!isTeammate(e.getName())
+then
+	turnGunRight(e.getBearing())
+	fire(2)
+end
+
+rule "collide wall -> turn"
+when
+	(exists onHitWall(HitWallEvent e))
+then
+	turnRight(e.getBearing() + 90)
+end

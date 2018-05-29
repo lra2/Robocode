@@ -1,0 +1,40 @@
+// Regras de Produção - Capanga
+
+declare:
+	movingForward: boolean
+end
+
+declare:
+	leaderIsDead: boolean
+end
+
+rule "message received -> shoot"
+when
+	(exists onMessageReceived(MessageEvent e))
+	(e.getMessage() instanceof Info)
+then
+	turnGunRight(getBearing(X, Y))
+	setFire(FirePower(getDistance(X, Y)))
+end
+
+rule "leader died -> shoot"
+when
+	(exists onRobotDeath(RobotDeathEvent e))
+then
+	$leaderIsDead : true
+end
+
+rule "collide robot -> shoot"
+when
+	(exists onHitRobot(HitRobotEvent e))
+	(e.isMyFault())
+then
+	turnRight(e.getBearing() + 90)
+end
+
+rule "collide wall -> turn"
+when
+	(exists onHitWall(HitWallEvent e))
+then
+	turnRight(e.getBearing() + 90)
+end

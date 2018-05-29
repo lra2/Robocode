@@ -1,0 +1,60 @@
+// Regras de Produção - Don Corleone
+
+declare:
+	previousEnergy: double
+end
+
+declare:
+	movementDirection: int
+end
+
+declare:
+	gunDirection: int
+end
+
+declare:
+	direction: static double
+end
+
+declare:
+	movingForward: boolean
+end
+
+rule "detect robot -> send infos"
+when
+	(exists onScannedRobot())
+	$scannedOpponent: ScannedRobotEvent()
+	!(isTeammate(e.getName()))
+then
+	broadcastMessage(new Info(e.getDistance(),
+									e.getEnergy(),
+									enemyX,
+									enemyY,
+									getHeading(),
+									getVelocity(),
+									getHeadingRadians()))
+	setTurnRight(e.getBearing() + 90 - 30 * movementDirection)
+end
+
+rule "hit shot -> change direction"
+when
+	(exists onHitByBullet(HitBulletEvent e))
+then
+	$movementDirection = -movementDirection
+end
+
+rule "collide wall -> turn"
+when
+	(exists onHitWall(HitWallEvent e))
+then
+	turnRight(angle - 100)
+end
+
+rule "collide robot -> shoot"
+when
+	$movementDirection = -movementDirection
+	(exists onHitRobot(HitRobotEvent e))
+	(!isTeammate(name))
+then
+	fire(2)
+end
