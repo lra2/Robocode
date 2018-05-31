@@ -22,7 +22,7 @@ import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
 
 
-public class CommodusTeamIndividual extends TeamRobot {
+public class Commodus extends TeamRobot {
 
     public static String RULES_FILE = "commodus/rules/robot_rules.drl";
     public static String CONSULT_ACTIONS = "consult_actions";
@@ -39,7 +39,7 @@ public class CommodusTeamIndividual extends TeamRobot {
     
     private Vector<FactHandle> currentReferencedFacts = new Vector<FactHandle>();
     		
-    public CommodusTeamIndividual(){
+    public Commodus(){
     }
     
     public void run() {
@@ -90,13 +90,13 @@ public class CommodusTeamIndividual extends TeamRobot {
 
 
     private void createKnowledgeBase() {
-        String rulesFile = System.getProperty("robot.rules", CommodusTeamIndividual.RULES_FILE);
+        String rulesFile = System.getProperty("robot.rules", Commodus.RULES_FILE);
 
         DEBUG.message("Creating knowledge base");
         kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
         
         DEBUG.message("Loading rules since "+rulesFile);
-        kbuilder.add(ResourceFactory.newClassPathResource(rulesFile, CommodusTeamIndividual.class), ResourceType.DRL);
+        kbuilder.add(ResourceFactory.newClassPathResource(rulesFile, Commodus.class), ResourceType.DRL);
         if (kbuilder.hasErrors()) {
             System.err.println(kbuilder.getErrors().toString());
         }
@@ -143,7 +143,7 @@ public class CommodusTeamIndividual extends TeamRobot {
         Action action;
         Vector<Action> actionsList = new Vector<Action>();
 
-        for (QueryResultsRow result : ksession.getQueryResults(CommodusTeamIndividual.CONSULT_ACTIONS)) {
+        for (QueryResultsRow result : ksession.getQueryResults(Commodus.CONSULT_ACTIONS)) {
             action = (Action) result.get("action");  			// get the Action object
             action.setRobot(this);                      		// link it to the current robot
             actionsList.add(action);

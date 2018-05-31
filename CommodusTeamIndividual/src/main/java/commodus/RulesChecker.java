@@ -74,7 +74,7 @@ public class RulesChecker {
         Action action;
         Vector<Action> actionsList = new Vector<Action>();
 
-        for (QueryResultsRow result : ksession.getQueryResults(CommodusTeamIndividual.CONSULT_ACTIONS)) {
+        for (QueryResultsRow result : ksession.getQueryResults(Commodus.CONSULT_ACTIONS)) {
             action = (Action) result.get("action");  
             action.setRobot(null); 
             actionsList.add(action);
