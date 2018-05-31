@@ -1,4 +1,13 @@
 // Regras de Produção - Don Corleone
+package OEIP
+
+import OEIP.*;
+import robocode.*;
+import robocode.ScannedRobotEvent;
+
+query "consult actions"
+	action: DonCorleoneAction()
+end
 
 declare:
 	previousEnergy: double
@@ -20,20 +29,41 @@ declare:
 	movingForward: boolean
 end
 
+declare Enemy:
+	name: String
+	enemyX: double
+	enemyY: double
+	distante: double
+	energy: double
+	velocity: double
+	heading: double
+	headingRadians: double
+end
+
+rule "debug actions of the same type"
+when
+	$action1: DonCorleoneAction($type: type, $priority1: priority)
+	$action2: DonCorleoneAction(type == $type, $priority2: priority)
+	eval ($priority1 > $priority2)
+then
+	retract($action2);
+	System.out.println("rule 1");
+end
+
 rule "detect robot -> send infos"
 when
 	(exists onScannedRobot())
 	$scannedOpponent: ScannedRobotEvent()
-	!(isTeammate(e.getName()))
+	not (isTeammate($scannedOpponent.getName()))
 then
-	broadcastMessage(new Info(e.getDistance(),
-									e.getEnergy(),
+	broadcastMessage(new Info($scannedOpponent.getDistance(),
+									$scannedOpponent.getEnergy(),
 									enemyX,
 									enemyY,
 									getHeading(),
 									getVelocity(),
 									getHeadingRadians()))
-	setTurnRight(e.getBearing() + 90 - 30 * movementDirection)
+	setTurnRight($scannedOpponent.getBearing() + 90 - 30 * movementDirection)
 end
 
 rule "hit shot -> change direction"
@@ -54,7 +84,7 @@ rule "collide robot -> shoot"
 when
 	$movementDirection = -movementDirection
 	(exists onHitRobot(HitRobotEvent e))
-	(!isTeammate(name))
+	not (isTeammate(name))
 then
-	fire(2)
+	insert(new DonCorleoneAction(Action.TURN_CANNON_RIGHT, 2, 1))
 end

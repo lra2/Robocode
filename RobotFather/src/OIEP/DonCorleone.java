@@ -25,10 +25,10 @@ public class DonCorleone extends TeamRobot {
 	public static String RULES_FILE = "RobotFather/rules/DonCorleoneRules.drl";
 	public static String CONSULT_ACTIONS = "consult_actions";
 	
-	private KnowledgeBuilder kbuilder;
-	private KnowledgeBase kbase;
-    private StatefulKnowledgeSession ksession;
-    private Vector<FactHandle> referenciasHechosActuales = new Vector<FactHandle>();
+	private KnowledgeBuilder builder;
+	private KnowledgeBase base;
+    private StatefulKnowledgeSession session;
+    private Vector<FactHandle> currentReferencedFacts = new Vector<FactHandle>();
 	
 	double previousEnergy = 100;
  	int movementDirection = 1;
@@ -98,7 +98,7 @@ public class DonCorleone extends TeamRobot {
 			ex.printStackTrace(out);
 		}
 		
-		setTurnRight(e.getBearing()+90-30*movementDirection);
+		setTurnRight(e.getBearing() + 90 - 30 * movementDirection);
     	
     	// Strategy to dodge the bullets
     	double changeInEnergy = previousEnergy - e.getEnergy();

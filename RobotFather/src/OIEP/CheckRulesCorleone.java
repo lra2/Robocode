@@ -18,10 +18,10 @@ public class CheckRulesCorleone {
 	public static String RULES_FILE = "RobotFather/rules/DonCorleoneRules.drl";
 	public static String CONSULT_ACTIONS = "consult_actions";
 	
-	private KnowledgeBuilder kbuilder;
-	private KnowledgeBase kbase;
-    private StatefulKnowledgeSession ksession;
-    private Vector<FactHandle> referenciasHechosActuales = new Vector<FactHandle>();
+	private KnowledgeBuilder builder;
+	private KnowledgeBase base;
+    private StatefulKnowledgeSession session;
+    private Vector<FactHandle> currentReferencedFacts = new Vector<FactHandle>();
     
     public CheckRulesCorleone() {
     	String debugMode = System.getProperty("robot.debug", "true");
@@ -31,11 +31,36 @@ public class CheckRulesCorleone {
     }
     
     private void loadEvents() {
-    	
+		ScannedRobotEvent ev = new ScannedRobotEvent("pepe", 100, 10, 10, 10, 10);
+		FactHandle referenceMade = session.insert(ev);
+		currentReferencedFacts.add(referenceMade);
+
+		DEBUG.message("Facts in active memory.");
+		DEBUG.dumpFacts(session);
+		session.fireAllRules();
+		List<DonCorleoneAction> actions = recoverActions();
+		DEBUG.message("Resulting actions.");
+		DEBUG.dumpActions(actions);
     }
     
     private void createKnowledgeBase() {
-    	
+		String rulesFile;
+		rulesFile = System.getProperty("robot.rules", CheckRulesCorleone.RULES_FILE);
+
+		DEBUG.message("Create knowledge base.");
+		builder = KnowledgeBuilderFactory.newKnowledgeBuilder();
+
+		DEBUG.message("Load rules from " + rulesFile);
+		builder.add(ResourceFactory.newClassPathResource(rulesFile, CheckRulesCorleone.class), ResourceType.DRL);
+		if(builder.hasErrors()) {
+			System.err.println(builder.getErrors().toString());
+		}
+
+		base = KnowledgeBaseFactory.newKnowledgeBase();
+		base.addKnowledgePackages(builder.getKnowledgePackages());
+
+		DEBUG.message("Create session (active memory)");
+		session = base.newStatefulKnowledgeSession();
     }
     
     public static void main(String args[]) {
@@ -46,11 +71,11 @@ public class CheckRulesCorleone {
     	DonCorleoneAction action;
     	Vector<DonCorleoneAction> actionsList = new Vector<DonCorleoneAction>();
     	
-    	for(QueryResultsRow result : ksession.getQueryResults(DonCorleone.CONSULT_ACTIONS)) {
+    	for(QueryResultsRow result : session.getQueryResults(DonCorleone.CONSULT_ACTIONS)) {
     		action = (DonCorleoneAction) result.get("action");
     		action.setRobot(null);
     		actionsList.add(action);
-    		ksession.retract(result.getFactHandle("action"));
+    		session.retract(result.getFactHandle("action"));
     	}
     	
     	return actionsList;
