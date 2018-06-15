@@ -26,9 +26,9 @@ public final class DEBUG {
 		}
 	}
 	
-	public static void dumpActions(List<DonCorleoneAction> actions) {
+	public static <T> void dumpActions(List<T> actions) {
 		if(debugModeEnabled) {
-			for(DonCorleoneAction a: actions) {
+			for(T a: actions) {
 				System.out.println("  " + a.toString());
 			}
 		}

@@ -12,7 +12,34 @@ import robocode.MessageEvent;
 import robocode.TeamRobot;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
+import java.util.Vector;
+
+import org.drools.KnowledgeBase;
+import org.drools.builder.KnowledgeBuilder;
+import org.drools.runtime.StatefulKnowledgeSession;
+import org.drools.runtime.rule.FactHandle;
+
+import org.drools.KnowledgeBaseFactory;
+import org.drools.builder.KnowledgeBuilderFactory;
+import org.drools.builder.ResourceType;
+import org.drools.io.ResourceFactory;
+import org.drools.runtime.rule.QueryResultsRow;
+import robocode.BulletHitBulletEvent;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.RobotDeathEvent;
+
 public class CapangaII extends TeamRobot implements Droid {
+	public static String RULES_FILE = "RobotFather/rules/Capanga2Rules.drl";
+	public static String CONSULT_ACTIONS = "consult_actions";
+	
+	private KnowledgeBuilder kbuilder;
+	private KnowledgeBase kbase;
+    private StatefulKnowledgeSession ksession;
+    private Vector<FactHandle> currentReferencedFacts = new Vector<FactHandle>();
+	
 	double moveAmount;
 	boolean First = true;
 	double previousEnergy = 100;
@@ -20,6 +47,12 @@ public class CapangaII extends TeamRobot implements Droid {
 	boolean leaderIsDead = false;
 	 
 	public void run() {
+		DEBUG.enableDebugMode(System.getProperty("robot.debug", "true").equals("true"));
+
+    	// Creates a knowledge base
+    	createKnowledgeBase();
+    	DEBUG.message("KBase created");
+		
 		out.println("CapangaII ready.");
 
 		// Move as much as possible
@@ -36,6 +69,55 @@ public class CapangaII extends TeamRobot implements Droid {
 			execute();
 		}
 	}
+	
+	private void createKnowledgeBase() {
+        String rulesFile = System.getProperty("robot.rules", CapangaII.RULES_FILE);
+
+        DEBUG.message("Creating knowledge base");
+        kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
+        
+        DEBUG.message("Loading rules since "+rulesFile);
+        kbuilder.add(ResourceFactory.newClassPathResource(rulesFile, CapangaII.class), ResourceType.DRL);
+        if (kbuilder.hasErrors()) {
+            System.err.println(kbuilder.getErrors().toString());
+        }
+
+        kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
+        
+        DEBUG.message("Creating session)");
+        ksession = kbase.newStatefulKnowledgeSession();
+    }
+    
+    private void cleanAnteriorFacts() {
+    	DEBUG.message("clean anterior facts");
+        for (FactHandle referencedFact : this.currentReferencedFacts) {
+            ksession.retract(referencedFact);
+        }
+        this.currentReferencedFacts.clear();
+    }
+
+    private Vector<Capanga2Action> loadActions() {
+    	DEBUG.message("load actions");
+    	Capanga2Action action;
+        Vector<Capanga2Action> actionsList = new Vector<Capanga2Action>();
+
+        for (QueryResultsRow result : ksession.getQueryResults(CapangaII.CONSULT_ACTIONS)) {
+            action = (Capanga2Action) result.get("action");  			// get the Action object
+            action.setRobot(this);                      		// link it to the current robot
+            actionsList.add(action);
+            ksession.retract(result.getFactHandle("action")); 	// clears the fact from the active memory
+        }
+
+        return actionsList;
+    }
+
+    private void executeActions(Vector<Capanga2Action> actions) {
+    	DEBUG.message("execute actions");
+        for (Capanga2Action action : actions) {
+            action.startExecution();
+        }
+    }
 
 	public void onMessageReceived(MessageEvent e) {
 		System.out.println("Received");
