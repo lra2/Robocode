@@ -1,6 +1,5 @@
 package OIEP;
 
-import java.awt.Color;
 import robocode.HitByBulletEvent;
 import robocode.ScannedRobotEvent;
 import robocode.TeamRobot;
@@ -12,6 +11,22 @@ import org.drools.KnowledgeBase;
 import org.drools.builder.KnowledgeBuilder;
 import org.drools.runtime.StatefulKnowledgeSession;
 import org.drools.runtime.rule.FactHandle;
+import java.awt.Color;
+import org.drools.KnowledgeBase;
+import org.drools.KnowledgeBaseFactory;
+import org.drools.builder.KnowledgeBuilder;
+import org.drools.builder.KnowledgeBuilderFactory;
+import org.drools.builder.ResourceType;
+import org.drools.io.ResourceFactory;
+import org.drools.runtime.StatefulKnowledgeSession;
+import org.drools.runtime.rule.FactHandle;
+import org.drools.runtime.rule.QueryResultsRow;
+import robocode.BulletHitBulletEvent;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.RobotDeathEvent;
 
 
 /**
@@ -25,9 +40,9 @@ public class DonCorleone extends TeamRobot {
 	public static String RULES_FILE = "RobotFather/rules/DonCorleoneRules.drl";
 	public static String CONSULT_ACTIONS = "consult_actions";
 	
-	private KnowledgeBuilder builder;
-	private KnowledgeBase base;
-    private StatefulKnowledgeSession session;
+	private KnowledgeBuilder kbuilder;
+	private KnowledgeBase kbase;
+    private StatefulKnowledgeSession ksession;
     private Vector<FactHandle> currentReferencedFacts = new Vector<FactHandle>();
 	
 	double previousEnergy = 100;
@@ -40,6 +55,10 @@ public class DonCorleone extends TeamRobot {
 	boolean movingForward;
 
 	public void run() {
+		DEBUG.enableDebugMode(System.getProperty("robot.debug", "true").equals("true"));
+
+		createKnowledgeBase();
+		DEBUG.message("KBase created");
 
 		// Setting up colors
 		RobotColors c = new RobotColors();
@@ -56,6 +75,11 @@ public class DonCorleone extends TeamRobot {
 		setRadarColor(c.radarColor);
 		setScanColor(c.scanColor);
 		setBulletColor(c.bulletColor);
+
+		// Make any movement from tank, radar or gun independent
+        setAdjustGunForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
+        setAdjustRadarForRobotTurn(true);
 
 		// Sends the color object to the team
 		try {
@@ -75,6 +99,55 @@ public class DonCorleone extends TeamRobot {
 			execute();
 		}
 	}
+
+	private void createKnowledgeBase() {
+        String rulesFile = System.getProperty("robot.rules", DonCorleone.RULES_FILE);
+
+        DEBUG.message("Creating knowledge base");
+        kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
+        
+        DEBUG.message("Loading rules since "+rulesFile);
+        kbuilder.add(ResourceFactory.newClassPathResource(rulesFile, DonCorleone.class), ResourceType.DRL);
+        if (kbuilder.hasErrors()) {
+            System.err.println(kbuilder.getErrors().toString());
+        }
+
+        kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
+        
+        DEBUG.message("Creating session)");
+        ksession = kbase.newStatefulKnowledgeSession();
+	}
+	
+	private void cleanAnteriorFacts() {
+    	DEBUG.message("clean anterior facts");
+        for (FactHandle referencedFact : this.currentReferencedFacts) {
+            ksession.retract(referencedFact);
+        }
+        this.currentReferencedFacts.clear();
+	}
+	
+	private Vector<DonCorleoneAction> loadActions() {
+    	DEBUG.message("load actions");
+        DonCorleoneAction action;
+        Vector<DonCorleoneAction> actionsList = new Vector<DonCorleoneAction>();
+
+        for (QueryResultsRow result : ksession.getQueryResults(DonCorleone.CONSULT_ACTIONS)) {
+            action = (DonCorleoneAction) result.get("action");  			// get the Action object
+            action.setRobot(this);                      		// link it to the current robot
+            actionsList.add(action);
+            ksession.retract(result.getFactHandle("action")); 	// clears the fact from the active memory
+        }
+
+        return actionsList;
+	}
+	
+	private void executeActions(Vector<DonCorleoneAction> actions) {
+    	DEBUG.message("execute actions");
+        for (DonCorleoneAction action : actions) {
+            action.startExecution();
+        }
+    }
 
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// If it is a robot of your team, do not attack.
